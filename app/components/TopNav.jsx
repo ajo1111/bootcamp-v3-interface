@@ -3,12 +3,15 @@
 import { useState } from "react";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { useSDK } from "@metamask/sdk-react";
 import { ethers } from "ethers";
 
-
 // Import hooks
 import { useProvider } from "../hooks/useProvider";
+
+//Import assets
+import network from "@/app/assets/other/network.svg";
 
 function TopNav() {
 
@@ -41,14 +44,23 @@ function TopNav() {
     }
 
     useEffect(() => {
-        // connect to blockchain here...
-        connecthandler();
+        // // connect to blockchain here...
+        // connecthandler();
     }, [provider]);
 
     return(
         <nav className="topnav">
-            <p>My Account: {account}</p>
-            <p>My Balance: {balance}</p>
+            <div className="network">
+               <label className="icon" htmlFor="network">
+                <Image src={network} alt="Select network" />
+               </label>
+            <div className="select">
+                <select name="network" id="network" value="">
+                   <option value="0">Select</option>
+                   <option value="0x7a69">Hardhat</option>
+                </select>
+                </div> 
+            </div>
         </nav>
     );
 }
