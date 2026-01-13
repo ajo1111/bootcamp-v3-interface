@@ -8,6 +8,13 @@ import { useSDK } from "@metamask/sdk-react";
 import Jazzicon from "react-jazzicon";
 import { ethers } from "ethers";
 
+// Redux
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { setAccount, setBalance } from "@/lib/features-user/user";
+import {
+    selectAccount,
+    selectETHBalance,
+} from "@/lib/selectors";
 
 // Import hooks
 import { useProvider } from "../hooks/useProvider";
@@ -20,11 +27,13 @@ import config from "@/app/config.json";
 
 function TopNav() {
 
+    const dispatch = useAppDispatch();
+
     const { sdk, provider: metamask, chainId} = useSDK();
     const { provider } = useProvider();
+    const account = useAppSelector(selectAccount);
+    const balance = useAppSelector(selectETHBalance);
 
-    const [account, setAccount] = useState("");
-    const [balance, setBalance] = useState("");
 
     async function connecthandler() {
         try {
@@ -48,8 +57,8 @@ function TopNav() {
         const balance = await provider.getBalance(account)
         
         //Store the values in state
-        setAccount(account.address)
-        setBalance(ethers.formatUnits(balance, 18))
+        dispatch(setAccount(account.address));
+        dispatch(setBalance(ethers.formatUnits(balance, 18)));      
     }
 
 useEffect(() => {
