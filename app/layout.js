@@ -9,6 +9,8 @@ const lexend = Lexend({ subsets: ['latin'] });
 import TopNav from "./components/TopNav";
 import MetaMaskProvider from "./components/providers/MetaMaskProvider";
 import StoreProvider from "./components/providers/StoreProvider";
+import SideNav from "./components/SideNav";
+
 
 export const metadata = {
   title: "DAPP Exchange",
@@ -24,6 +26,7 @@ export default function RootLayout({ children }) {
     <MetaMaskProvider>
       <html lang="en">
         <body className={`${lexend.className} bg-gray-50`} suppressHydrationWarning>
+          <SideNav/>
           <main className="content">
             <TopNav />
             {children}
