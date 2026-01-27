@@ -10,7 +10,7 @@ import { ethers } from "ethers";
 
 // Redux
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { setAccount, setBalance } from "@/lib/features-user/user";
+import { setAccount, setBalance } from "@/lib/features/user";
 import {
     selectAccount,
     selectETHBalance,
@@ -68,8 +68,8 @@ useEffect(() => {
         metamask.on("accountsChanged", async (accounts) => {
         if (accounts.length === 0) {
             // no accounts are connected
-            setAccount("");
-            setBalance("");
+            dispatch(setAccount(""));
+            dispatch(setBalance(""));
         } else {
           await getAccountInfo();
         }
