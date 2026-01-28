@@ -1310,6 +1310,117 @@ form input[type="submit"]:hover {
   }
 }
 
+/* ------------------------------------------------------ */
+/* DEPOSIT & WITHDRAW COMPONENT */
+
+.deposit-withdraw-container {
+  width: 100%;
+}
+
+.deposit-withdraw-container .tabs {
+  position: static;
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1.5em;
+  padding: 0;
+  border: none;
+}
+
+.deposit-withdraw-container .tabs .tab {
+  padding: 0.75em 2em;
+  background: var(--background);
+  color: var(--clr-gray);
+  border: 1px solid var(--clr-gray);
+  border-radius: var(--global-radius);
+  font-family: "Lexend";
+  font-size: 0.90rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: var(--global-transition);
+}
+
+.deposit-withdraw-container .tabs .tab:hover {
+  color: var(--clr-orange);
+  border-color: var(--clr-orange);
+}
+
+.deposit-withdraw-container .tabs .tab.active {
+  background-color: var(--clr-orange);
+  color: var(--clr-black);
+  border-color: var(--clr-orange);
+}
+
+.deposit-withdraw-container .tab-content h3 {
+  margin-bottom: 1em;
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--clr-gray);
+}
+
+.deposit-withdraw-container .transfer-table input[type="number"] {
+  width: 100%;
+  max-width: 180px;
+  padding: 0.75em 1em;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--foreground);
+  border: 1px solid var(--clr-gray);
+  border-radius: var(--global-radius);
+  font-family: "Lexend";
+  font-size: 0.90rem;
+  transition: var(--global-transition);
+}
+
+.deposit-withdraw-container .transfer-table input[type="number"]:focus {
+  outline: none;
+  border-color: var(--clr-orange);
+}
+
+.deposit-withdraw-container .transfer-table input[type="number"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deposit-withdraw-container .transfer-table .btn-primary {
+  width: 120px;
+  height: 40px;
+  background: var(--background);
+  color: var(--clr-orange);
+  border: 1px solid var(--clr-orange);
+  border-radius: var(--global-radius);
+  font-family: "Lexend";
+  font-size: 0.90rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: var(--global-transition);
+}
+
+.deposit-withdraw-container .transfer-table .btn-primary:hover:not(:disabled) {
+  background-color: var(--clr-orange);
+  color: var(--clr-black);
+}
+
+.deposit-withdraw-container .transfer-table .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deposit-withdraw-container .transfer-table .flex {
+  gap: 0.5em;
+}
+
+.deposit-withdraw-container .transfer-table td,
+.deposit-withdraw-container .transfer-table th {
+  padding: 1em 0.5em;
+}
+
+.deposit-withdraw-container .transfer-table thead th {
+  color: var(--clr-gray);
+  font-size: 0.85rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 @media only screen and (min-width: 1500px) {
   /* ------------------------------------------------------ */
   /* PAGE */
