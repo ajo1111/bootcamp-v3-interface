@@ -20,7 +20,7 @@ function SideNav() {
         { href: "/wallet", label: "Wallet", image: wallet},
         { href: "/", label: "Trading", image: trading},
         { href: "/swap", label: "Swap", image: swap},
-        { href: "/loans", label: "Loans", image: loans},   
+        { href: "/loans", label: "Loans", image: loans},
     ];
     
     return (

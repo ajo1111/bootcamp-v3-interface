@@ -81,7 +81,7 @@ Next.js App Router structure:
 - All deposit operations require two transactions: approve() then depositToken()
 - Font used: Lexend (Google Fonts)
 
-## Current Session Focus: Deposit/Withdraw UI
+## Current Session Focus from 1/28/2026 completed: Deposit/Withdraw UI
 
 ### Goal
 Build the user interface allowing users to deposit and withdraw cryptocurrency (ETH and tokens) between their MetaMask wallet and the Exchange smart contract.

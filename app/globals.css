@@ -1234,21 +1234,51 @@ form input[type="submit"]:hover {
 
   /* /trading */
 
+  /* Industry-standard trading layout */
+
+  /* Market Selector - Top left, prominent */
   .trading .market {
     grid-row: 2;
+    grid-column: 1 / 5;
+  }
+
+  /* Price Chart - Left side, large area (60% width) */
+  .trading .chart-section {
+    grid-row: 3;
+    grid-column: 1 / 8;
+    min-height: 400px;
+  }
+
+  /* Order Form - Right side top (40% width) */
+  .trading .order {
+    grid-row: 2 / 4;
     grid-column: 8 / 13;
+    min-height: 400px;
+  }
+
+  /* Recent Trades - Right side below order form */
+  .trading .trades-section {
+    grid-row: 4;
+    grid-column: 8 / 13;
+    min-height: 300px;
+  }
+
+  /* Orderbook - Left side below chart */
+  .trading .orderbook-section {
+    grid-row: 4;
+    grid-column: 1 / 8;
+    min-height: 300px;
+  }
+
+  /* User's Trades - Bottom full width */
+  .trading .mytrades-section {
+    grid-row: 5;
+    grid-column: 1 / 13;
   }
 
   .trading .insights {
     grid-row: span 2;
     grid-column: 1 / 8;
-  }
-
-  .trading .order {
-    grid-row: 3;
-    grid-column: 8 / 13;
-
-    min-height: 320px;
   }
 
   .trading .orderbook {
@@ -1419,6 +1449,142 @@ form input[type="submit"]:hover {
   font-weight: 300;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* ------------------------------------------------------ */
+/* MARKETS COMPONENT */
+
+.markets-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1em;
+}
+
+.markets-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--clr-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.markets-select {
+  flex: 1;
+  max-width: 300px;
+  padding: 0.75em 1em;
+
+  background-color: var(--clr-black);
+  color: var(--clr-white);
+
+  border: 1px solid var(--clr-gray);
+  border-radius: var(--global-radius);
+
+  font-family: "Lexend", Arial;
+  font-size: 0.95rem;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: var(--global-transition);
+
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23686868' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75em center;
+  background-size: 1.25em;
+  padding-right: 2.5em;
+}
+
+.markets-select:hover {
+  border-color: var(--clr-orange);
+}
+
+.markets-select:focus {
+  outline: none;
+  border-color: var(--clr-orange);
+}
+
+.markets-select option {
+  background-color: var(--clr-black);
+  color: var(--clr-white);
+  padding: 0.5em;
+}
+
+/* ------------------------------------------------------ */
+/* TRADING PAGE COMPONENTS */
+
+.new-order,
+.orderbook,
+.my-trades,
+.trades,
+.price-chart {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--clr-gray);
+  border-radius: var(--global-radius);
+  padding: 1.5em;
+}
+
+.new-order h2,
+.orderbook h2,
+.my-trades h2,
+.trades h2,
+.price-chart h2 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 1em;
+  color: var(--clr-white);
+}
+
+.price-chart .chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  border: 1px dashed var(--clr-gray);
+}
+
+.placeholder-text {
+  color: var(--clr-gray);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2em 0;
+}
+
+.placeholder-subtext {
+  color: var(--clr-gray);
+  font-size: 0.75rem;
+  opacity: 0.6;
+  text-align: center;
+  margin-top: 0.5em;
+}
+
+/* Trading page grid layout - mobile first (stacked) */
+.trading .market {
+  grid-column: span 12;
+}
+
+.trading .chart-section {
+  grid-column: span 12;
+}
+
+.trading .order {
+  grid-column: span 12;
+}
+
+.trading .trades-section {
+  grid-column: span 12;
+}
+
+.trading .orderbook-section {
+  grid-column: span 12;
+}
+
+.trading .mytrades-section {
+  grid-column: span 12;
 }
 
 @media only screen and (min-width: 1500px) {
