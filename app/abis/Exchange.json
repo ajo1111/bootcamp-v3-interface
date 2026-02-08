@@ -367,7 +367,7 @@
           "type": "bytes"
         }
       ],
-      "name": "flashloan",
+      "name": "flashLoan",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

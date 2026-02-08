@@ -1,53 +1,160 @@
-"use client";
+"use client"
 
-// Components
-import Markets from "@/app/components/Markets";
-import PriceChart from "@/app/components/PriceChart";
-import NewOrder from "@/app/components/NewOrder";
-import Orderbook from "@/app/components/Orderbook";
-import MyTrades from "@/app/components/MyTrades";
-import Trades from "@/app/components/Trades";
+import { useEffect, useRef, useState } from "react"
+import { ethers } from "ethers"
 
-// Hooks
-import { useMarkets } from "@/app/hooks/useMarkets";
+// Import components
+import Market from "@/app/components/Market"
+import Book from "@/app/components/Book"
+import Orders from "@/app/components/Orders"
+import Tabs from "@/app/components/Tabs"
+import Chart from "@/app/components/Chart"
+
+// Import dummy data
+import { myOpenOrders, filledOrders, myFilledOrders } from "@/app/data/orders"
+
+// Redux
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import {
+  setAllOrders,
+  setCancelledOrders,
+  setFilledOrders,
+} from "@/lib/features/exchange/exchange"
+
+// Custom hooks
+import { useProvider } from "@/app/hooks/useProvider"
+import { useExchange } from "@/app/hooks/useExchange"
+
+// Config
+import config from "@/app/config.json"
+
+import {
+  selectMarket,
+  selectOpenOrders,
+} from "@/lib/selectors"
+import { exchange } from "@/lib/features/exchange/exchange"
 
 export default function Home() {
-  // Load markets from config into Redux
-  useMarkets();
+
+  // Redux
+  const dispatch = useAppDispatch()
+  const market = useAppSelector(selectMarket)
+  const openOrders = useAppSelector(selectOpenOrders)
+
+  // Hooks
+  const { provider, chainId } = useProvider()
+  const { exchange } = useExchange()
+
+  // Data fetching
+  async function getAllOrders() {
+    const block = await provider.getBlockNumber()
+
+    // Fetch all orders via events filter
+    const orderStream = await exchange.queryFilter('OrderCreated', 0, block)
+    const allOrders = orderStream.map(event => event.args)
+
+    // Set orders in Redux
+    dispatch(setAllOrders(serializeOrders(allOrders)))
+
+    // Fetch canceled orders
+    const cancelStream = await exchange.queryFilter('OrderCancelled', 0, block)
+    const cancelledOrders = cancelStream.map(event => event.args)
+
+    // Set orders in Redux
+    dispatch(setCancelledOrders(serializeOrders(cancelledOrders)))
+
+    // Fetch filled orders
+    const tradeStream = await exchange.queryFilter('OrderFilled', 0, block)
+    const filledOrders = tradeStream.map(event => event.args)
+
+    // Set orders in Redux
+    dispatch(setFilledOrders(serializeOrders(filledOrders)))
+  }
+
+  function serializeOrders(orders) {
+    // Redux can't naturally serialize BigInts
+    // (uint256s from Solidity). So we re-format
+    // them into strings
+
+    let serializedOrders = []
+
+    orders.forEach((o) => {
+      serializedOrders[Number(o.id) - 1] = {
+        id: o.id.toString(),
+        user: o.user,
+        tokenGet: o.tokenGet,
+        amountGet: o.amountGet.toString(),
+        tokenGive: o.tokenGive,
+        amountGive: o.amountGive.toString(),
+        timestamp: o.timestamp.toString()
+      }
+    })
+
+    return serializedOrders
+  }
+
+  useEffect(() => {
+    if(provider && exchange && market) {
+      // Fetch all orders
+      getAllOrders()
+    }
+
+  }, [provider, exchange, market])
 
   return (
     <div className="page trading">
       <h1 className="title">Trading</h1>
 
-      {/* Market Selector - Top left, prominent position */}
+      <section className="insights">
+        <Chart />
+      </section>
+
       <section className="market">
-        <Markets />
+        <h2>Select Market</h2>
+
+        <Market />
       </section>
 
-      {/* Price Chart - Left side, large area for visibility */}
-      <section className="chart-section">
-        <PriceChart />
-      </section>
-
-      {/* Order Entry Form - Right side, always accessible */}
       <section className="order">
-        <NewOrder />
+        <h2>New Order</h2>
+
+        <Tabs/>
+
+        <form>
+
+        </form>
+
       </section>
 
-      {/* Recent Trades - Right side below order form */}
-      <section className="trades-section">
-        <Trades />
+      <section className="orderbook">
+        <h2>Orderbook</h2>
+        {market ? (
+          <>
+            {/* SELLING */}
+            <Book caption={"Selling"} market={market} orders={openOrders.sellOrders}/>
+
+            {/* BUYING */}
+            <Book caption={"Buying"} market={market} orders={openOrders.buyOrders}/>
+          </>
+        ) : (
+          <p className="center">Please Select Market</p>
+        )}
       </section>
 
-      {/* Orderbook - Left side below price chart */}
-      <section className="orderbook-section">
-        <Orderbook />
+      <section className="orders">
+        <h2>My Trades</h2>
+
+        <Tabs/>
+
+        <Orders/>
       </section>
 
-      {/* User's Trades - Bottom full width */}
-      <section className="mytrades-section">
-        <MyTrades />
+      <section className="transactions">
+        <h2>Trades</h2>
+
+        <Orders/>
       </section>
+
     </div>
   );
 }

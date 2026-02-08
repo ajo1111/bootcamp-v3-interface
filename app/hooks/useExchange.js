@@ -1,34 +1,28 @@
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { useDispatch, useSelector } from 'react-redux';
+// The following hook is for interacting
+// with the main exchange contract.
 
-//Custom Hooks
-import { useProvider } from '@/app/hooks/useProvider';
+import { useState, useEffect } from "react"
+import { ethers } from "ethers"
+
+// Custom hooks
+import { useProvider } from "@/app/hooks/useProvider"
 
 // ABIs & config
-import EXCHANGE from "@/app/abis/Exchange.json";
-import config from "@/app/config.json";
-
-// Redux
-import { setExchange } from '@/lib/features/exchange/exchange';
+import EXCHANGE from '@/app/abis/Exchange.json'
+import config from "@/app/config.json"
 
 export function useExchange() {
+  const { provider, chainId } = useProvider()
 
-    const { provider, chainId } = useProvider();
-    const dispatch = useDispatch();
-    const exchange = useSelector((state) => state.exchange);
+  const [exchange, setExchange] = useState(null)
 
-    useEffect(() => {
-        if (!provider || !chainId) return;
-        if (!config[Number(chainId)]) return;
+  useEffect(() => {
+    if (!provider || !chainId) return
+    if (!config[Number(chainId)]) return
 
-        const exchangeAddress = config[Number(chainId)].exchange;
-        const contract = new ethers.Contract(exchangeAddress, EXCHANGE, provider);
-        
-        console.log('Exchange loaded:', exchangeAddress);
-        dispatch(setExchange({ address: exchangeAddress, contract }));
+    const exchange = new ethers.Contract(config[Number(chainId)].exchange, EXCHANGE, provider)
+    setExchange(exchange)
+  }, [provider, chainId])
 
-    }, [provider, chainId, dispatch]);
-
-    return { exchange };
+  return { exchange }
 }
