@@ -11,14 +11,14 @@ import Tabs from "@/app/components/Tabs"
 import Chart from "@/app/components/Chart"
 
 // Import dummy data
-import { myOpenOrders, filledOrders, myFilledOrders } from "@/app/data/orders"
+import { myOpenOrders, myFilledOrders } from "@/app/data/orders"
 
 // Redux
 import { useAppDispatch, useAppSelector } from "@/lib/hooks"
 import {
   setAllOrders,
   setCancelledOrders,
-  setFilledOrders,
+  setFilledOrders
 } from "@/lib/features/exchange/exchange"
 
 // Custom hooks
@@ -31,6 +31,7 @@ import config from "@/app/config.json"
 import {
   selectMarket,
   selectOpenOrders,
+  selectFilledOrders,
 } from "@/lib/selectors"
 import { exchange } from "@/lib/features/exchange/exchange"
 
@@ -40,6 +41,7 @@ export default function Home() {
   const dispatch = useAppDispatch()
   const market = useAppSelector(selectMarket)
   const openOrders = useAppSelector(selectOpenOrders)
+  const filledOrders = useAppSelector(selectFilledOrders)
 
   // Hooks
   const { provider, chainId } = useProvider()
@@ -152,7 +154,10 @@ export default function Home() {
       <section className="transactions">
         <h2>Trades</h2>
 
-        <Orders/>
+        <Orders
+          market={market}
+          orders={filledOrders}
+        />
       </section>
 
     </div>
