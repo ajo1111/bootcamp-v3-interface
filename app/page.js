@@ -10,9 +10,6 @@ import Orders from "@/app/components/Orders"
 import Tabs from "@/app/components/Tabs"
 import Chart from "@/app/components/Chart"
 
-// Import dummy data
-import { myOpenOrders, myFilledOrders } from "@/app/data/orders"
-
 // Redux
 import { useAppDispatch, useAppSelector } from "@/lib/hooks"
 import {
@@ -31,17 +28,27 @@ import config from "@/app/config.json"
 import {
   selectMarket,
   selectOpenOrders,
+  selectMyOpenOrders,
   selectFilledOrders,
+  selectMyFilledOrders,
 } from "@/lib/selectors"
 import { exchange } from "@/lib/features/exchange/exchange"
 
 export default function Home() {
+  // Local state
+  const [showMyTransactions, setShowMyTransactions] = useState(false)
 
   // Redux
   const dispatch = useAppDispatch()
   const market = useAppSelector(selectMarket)
   const openOrders = useAppSelector(selectOpenOrders)
+  const myOpenOrders = useAppSelector(selectMyOpenOrders)
   const filledOrders = useAppSelector(selectFilledOrders)
+  const myFilledOrders = useAppSelector(selectMyFilledOrders)
+
+  // Order & Transaction tab references (Trades or Orders)
+  const tradeRef = useRef(null)
+  const orderRef = useRef(null)
 
   // Hooks
   const { provider, chainId } = useProvider()
@@ -146,9 +153,19 @@ export default function Home() {
       <section className="orders">
         <h2>My Trades</h2>
 
-        <Tabs/>
+        <Tabs
+          tabs={[
+            { name: "Trades" , ref: tradeRef },
+            { name: "Orders", ref: orderRef, default: true }
+          ]}
+          setCondition={setShowMyTransactions}
+        />
 
-        <Orders/>
+        <Orders
+          market={market}
+          orders={showMyTransactions ? myFilledOrders : myOpenOrders}
+          type={showMyTransactions ? "filled" : "open"}
+        />
       </section>
 
       <section className="transactions">
