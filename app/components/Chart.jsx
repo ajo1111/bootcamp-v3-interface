@@ -10,39 +10,14 @@ import { options, series, getSeriesForMarket } from "@/app/data/prices"
 import up from "@/app/assets/arrows/price-up.svg"
 import down from "@/app/assets/arrows/price-down.svg"
 
-function normalizePoint(point) {
-  const x = point?.x instanceof Date ? point.x : new Date(point?.x)
-  return { x, y: point?.y }
-}
-
-function mergeSeries(base = [], extra = []) {
-  const byTime = new Map()
-
-  base.forEach((point) => {
-    const normalized = normalizePoint(point)
-    if (!Number.isNaN(normalized.x?.getTime?.())) {
-      byTime.set(normalized.x.getTime(), normalized)
-    }
-  })
-
-  extra.forEach((point) => {
-    const normalized = normalizePoint(point)
-    if (!Number.isNaN(normalized.x?.getTime?.())) {
-      byTime.set(normalized.x.getTime(), normalized)
-    }
-  })
-
-  return Array.from(byTime.values()).sort((a, b) => a.x - b.x)
-}
-
 function PriceChart({ market, data }) {
   const dummySeries = getSeriesForMarket(market) || series
   const dummyData = dummySeries?.[0]?.data || []
   const liveData = data?.series?.[0]?.data || []
-  const mergedData = mergeSeries(dummyData, liveData)
+  const chartData = liveData.length > 0 ? liveData : dummyData
 
-  const lastCandle = mergedData[mergedData.length - 1]
-  const prevCandle = mergedData[mergedData.length - 2]
+  const lastCandle = chartData[chartData.length - 1]
+  const prevCandle = chartData[chartData.length - 2]
 
   const lastPrice =
     data?.lastPrice ??
@@ -91,7 +66,7 @@ function PriceChart({ market, data }) {
 
       <Chart
         options={options}
-        series={[{ data: mergedData }]}
+        series={[{ data: chartData }]}
         type="candlestick"
         width="100%"
         height="100%"
