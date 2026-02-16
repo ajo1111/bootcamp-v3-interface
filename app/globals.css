@@ -958,7 +958,25 @@ form input[type="submit"]:hover {
 */
 
 .apexcharts-tooltip {
-  background: var(--background);
+  background: var(--background) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  color: var(--clr-white) !important;
+}
+
+.apexcharts-tooltip-title {
+  background: var(--background) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--clr-white) !important;
+}
+
+.apexcharts-tooltip-text,
+.apexcharts-tooltip-text-y-label,
+.apexcharts-tooltip-text-y-value,
+.apexcharts-tooltip-text-y-title,
+.apexcharts-tooltip-series-group,
+.apexcharts-tooltip-candlestick {
+  color: var(--clr-white) !important;
 }
 
 /* SWAP FORM */

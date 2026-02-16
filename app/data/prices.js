@@ -73,23 +73,43 @@ export const options = {
 }
 
 // Dummy data for price chart
+const baseData = [
+  { x: new Date(2025, 0, 1), y: [1.00, 1.05, 0.98, 1.02] },
+  { x: new Date(2025, 0, 2), y: [1.02, 1.07, 1.00, 1.01] },
+  { x: new Date(2025, 0, 3), y: [1.01, 1.09, 1.00, 1.08] },
+  { x: new Date(2025, 0, 4), y: [1.08, 1.10, 1.03, 1.04] },
+  { x: new Date(2025, 0, 5), y: [1.04, 1.05, 1.00, 1.01] },
+  { x: new Date(2025, 0, 6), y: [1.01, 1.06, 0.99, 1.00] },
+  { x: new Date(2025, 0, 7), y: [1.00, 1.07, 0.98, 1.03] },
+  { x: new Date(2025, 0, 8), y: [1.03, 1.09, 1.02, 1.07] },
+  { x: new Date(2025, 0, 9), y: [1.07, 1.10, 1.05, 1.09] },
+  { x: new Date(2025, 0, 10), y: [1.09, 1.12, 1.08, 1.11] },
+  { x: new Date(2025, 0, 11), y: [1.11, 1.13, 1.07, 1.08] },
+  { x: new Date(2025, 0, 12), y: [1.08, 1.11, 1.04, 1.06] },
+  { x: new Date(2025, 0, 13), y: [1.06, 1.10, 1.03, 1.09] },
+]
+
+const scaleSeries = (data, scale) => data.map((point) => ({
+  x: point.x,
+  y: point.y.map((value) => Math.round(value * scale * 10000) / 10000)
+}))
+
+const scaleByPair = {
+  "IPT/mUSDC": 0.25,
+  "IPT/mLINK": 0.02,
+  "DAPP/mUSDC": 0.5,
+  "DAPP/mLINK": 0.04,
+}
 
 export const series = [
   {
-    data: [
-      { x: new Date(2025, 0, 1), y: [6593.34, 6600, 6582.63, 6600.00] },
-      { x: new Date(2025, 0, 2), y: [6600, 6604.76, 6590.73, 6593.86] },
-      { x: new Date(2025, 0, 3), y: [6593.86, 6625.76, 6590.73, 6620.00] },
-      { x: new Date(2025, 0, 4), y: [6620.00, 6604.76, 6590.73, 6605.86] },
-      { x: new Date(2025, 0, 5), y: [6605.86, 6604.76, 6590.73, 6590.75] },
-      { x: new Date(2025, 0, 6), y: [6590.75, 6604.76, 6590.73, 6582.10] },
-      { x: new Date(2025, 0, 7), y: [6582.10, 6604.76, 6516.73, 6550.10] },
-      { x: new Date(2025, 0, 8), y: [6550.10, 6604.76, 6550.73, 6600.23] },
-      { x: new Date(2025, 0, 9), y: [6600.23, 6604.76, 6590.73, 6652.89] },
-      { x: new Date(2025, 0, 10), y: [6652.89, 6670.00, 6632.89, 6660.89] },
-      { x: new Date(2025, 0, 11), y: [6660.89, 6670.00, 6632.89, 6650.89] },
-      { x: new Date(2025, 0, 12), y: [6650.89, 6670.00, 6632.89, 6638.89] },
-      { x: new Date(2025, 0, 13), y: [6638.89, 6670.00, 6598.89, 6618.89] },
-    ]
+    data: scaleSeries(baseData, 1)
   }
 ]
+
+export const getSeriesForMarket = (market) => {
+  if (!market || market.length < 2) return series
+  const pair = `${market[0].symbol}/${market[1].symbol}`
+  const scale = scaleByPair[pair] || 1
+  return [{ data: scaleSeries(baseData, scale) }]
+}

@@ -31,6 +31,7 @@ import {
   selectMyOpenOrders,
   selectFilledOrders,
   selectMyFilledOrders,
+  selectPriceData,
 } from "@/lib/selectors"
 import { exchange } from "@/lib/features/exchange/exchange"
 
@@ -45,6 +46,7 @@ export default function Home() {
   const myOpenOrders = useAppSelector(selectMyOpenOrders)
   const filledOrders = useAppSelector(selectFilledOrders)
   const myFilledOrders = useAppSelector(selectMyFilledOrders)
+  const priceData = useAppSelector(selectPriceData)
 
   // Order & Transaction tab references (Trades or Orders)
   const tradeRef = useRef(null)
@@ -115,7 +117,12 @@ export default function Home() {
       <h1 className="title">Trading</h1>
 
       <section className="insights">
-        <Chart />
+        {market ? (
+          <Chart market={market} data={priceData} />
+        ) : (
+          <p className="center">Please Select Market</p>
+        )}
+        
       </section>
 
       <section className="market">
@@ -151,7 +158,7 @@ export default function Home() {
       </section>
 
       <section className="orders">
-        <h2>My Trades</h2>
+        <h2>{showMyTransactions ? "My Trades" : "My Orders"}</h2>
 
         <Tabs
           tabs={[
