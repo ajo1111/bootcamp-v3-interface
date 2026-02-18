@@ -16,7 +16,8 @@ import {
   setAllOrders,
   setCancelledOrders,
   setFilledOrders,
-  addOrder
+  addOrder,
+  addCancelledOrder
 } from "@/lib/features/exchange/exchange"
 
 // Custom hooks
@@ -167,10 +168,27 @@ export default function Home() {
       dispatch(addOrder(order))
     }
 
+    // Create event listener to listen for orders cancelled
+    const onOrderCancelled = (id, user, tokenGet, amountGet, tokenGive, amountGive, timestamp) => {
+      const order = {
+        id: Number(id),
+        user: user,
+        tokenGet: tokenGet,
+        amountGet: amountGet.toString(),
+        tokenGive: tokenGive,
+        amountGive: amountGive.toString(),
+        timestamp: timestamp.toString()
+      }
+
+      dispatch(addCancelledOrder(order))
+    }
+
     exchange.on("OrderCreated", onOrderCreated)
+    exchange.on("OrderCancelled", onOrderCancelled)
 
     return () => {
       exchange.off("OrderCreated", onOrderCreated)
+      exchange.off("OrderCancelled", onOrderCancelled)
     }
   }, [provider, exchange, market, dispatch])
 
