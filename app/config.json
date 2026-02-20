@@ -32,5 +32,40 @@
         ]
       }
     ]
+  },
+    "4": {
+    "exchange": "0xBE579882a387a2b18638e816F5482491fDe4DbA1",
+    "flashLoanUser": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+    "tokens": [
+      {
+        "name": "IPT",
+        "address": "0x894f4bb195c689F4Fc1f43BfFa303CBFC19eD902"
+      },
+      {
+        "name": "mUSDC",
+        "address": "0x732F26eAfEEecc90f7DD52Bb1607Dd0Dfe932401"
+      },
+      {
+        "name": "mLINK",
+        "address": "0xF8C2E1D9706DD74DE009Ac7d2998de5399054eC6"
+      }
+    ],
+    "markets": [
+      {
+        "name": "IPT / mUSDC",
+        "tokens": [
+          "0x894f4bb195c689F4Fc1f43BfFa303CBFC19eD902",
+          "0x732F26eAfEEecc90f7DD52Bb1607Dd0Dfe932401"
+        ]
+      },
+      {
+        "name": "IPT / mLINK",
+        "tokens": [
+          "0x894f4bb195c689F4Fc1f43BfFa303CBFC19eD902",
+          "0xF8C2E1D9706DD74DE009Ac7d2998de5399054eC6"
+        ]
+      }
+    ]
   }
+
 }
