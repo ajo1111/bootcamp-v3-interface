@@ -1,7 +1,5 @@
 "use client"
 
-import { useState } from "react"
-
 import { useEffect } from "react"
 import Image from "next/image"
 import { useSDK } from "@metamask/sdk-react"
@@ -25,6 +23,39 @@ import network from "@/app/assets/other/network.svg"
 // Import config
 import config from "@/app/config.json"
 
+const TENDERLY_RPC_URL = process.env.NEXT_PUBLIC_TENDERLY_RPC_URL
+
+const NETWORK_OPTIONS = [
+  {
+    key: "31337",
+    label: "Hardhat",
+    chainIdHex: "0x7a69",
+  },
+  {
+    key: "4",
+    label: "Tenderly",
+    chainIdHex: "0x4",
+    addEthereumChainParams: TENDERLY_RPC_URL
+      ? {
+          chainId: "0x4",
+          chainName: "Tenderly",
+          nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+          rpcUrls: [TENDERLY_RPC_URL],
+          blockExplorerUrls: ["https://dashboard.tenderly.co/"],
+        }
+      : null,
+  },
+]
+
+function getChainKey(chainId) {
+  if (!chainId) return null
+
+  const parsedChainId = Number(chainId)
+  if (!Number.isFinite(parsedChainId)) return null
+
+  return String(parsedChainId)
+}
+
 function TopNav() {
 
   const { sdk, provider: metamask, chainId } = useSDK()
@@ -33,6 +64,8 @@ function TopNav() {
   const dispatch = useAppDispatch()
   const account = useAppSelector(selectAccount)
   const balance = useAppSelector(selectETHBalance)
+  const chainKey = getChainKey(chainId)
+  const selectedNetwork = chainKey && config[chainKey] ? chainKey : "0"
 
   async function connectHandler() {
     try {
@@ -44,10 +77,32 @@ function TopNav() {
   }
 
   async function networkHandler(e) {
-    await metamask.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: e.target.value }],
-    })    
+    if (!metamask) return
+
+    const nextNetworkKey = e.target.value
+    if (nextNetworkKey === "0") return
+
+    const nextNetwork = NETWORK_OPTIONS.find(({ key }) => key === nextNetworkKey)
+    if (!nextNetwork) return
+
+    try {
+      await metamask.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: nextNetwork.chainIdHex }],
+      })
+    } catch (error) {
+      const missingNetworkErrorCode = 4902
+
+      if (error?.code === missingNetworkErrorCode && nextNetwork.addEthereumChainParams) {
+        await metamask.request({
+          method: "wallet_addEthereumChain",
+          params: [nextNetwork.addEthereumChainParams],
+        })
+        return
+      }
+
+      console.error(error)
+    }
   }
 
   async function getAccountInfo() {
@@ -95,12 +150,15 @@ function TopNav() {
           <select
             name="network"
             id="network"
-            value={config[Number(chainId)] ? chainId: 0}
+            value={selectedNetwork}
             onChange={networkHandler}
           >
             <option value="0">Select</option>
-            <option value="0x7a69">Hardhat</option>
-            <option value="0x4">Tenderly</option>
+            {NETWORK_OPTIONS.map((networkOption) => (
+              <option key={networkOption.key} value={networkOption.key}>
+                {networkOption.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
