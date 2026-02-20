@@ -1,6 +1,22 @@
+import { useRouter } from "next/navigation"
 import { ethers } from "ethers"
 
+// Redux
+import { useAppDispatch } from "@/lib/hooks"
+import { setOrderToFill } from "@/lib/features/exchange/exchange"
+
 function Book({ caption, market, orders }) {
+  const router = useRouter()
+
+  // Redux
+  const dispatch = useAppDispatch()
+
+  // Handlers
+  async function fillHandler(order) {
+    dispatch(setOrderToFill(order))
+
+    router.push("/swap")
+  }
 
   return (
     <div className="table-wrapper">
@@ -15,7 +31,13 @@ function Book({ caption, market, orders }) {
         </thead>
         <tbody>
           {orders.map((order, index) => (
-            <tr key={index} role="link" tabIndex={0} aria-label="Fill Order">
+            <tr
+              key={index}
+              onClick={() => fillHandler(order)}
+              role="link"
+              tabIndex={0}
+              aria-label="Fill Order"
+            >
               <td className={caption === "Selling" ? "gray" : undefined}>
                 {ethers.formatUnits(order.amountGet, 18)}
               </td>

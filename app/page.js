@@ -17,15 +17,13 @@ import {
   setCancelledOrders,
   setFilledOrders,
   addOrder,
-  addCancelledOrder
+  addCancelledOrder,
+  addFilledOrder
 } from "@/lib/features/exchange/exchange"
 
 // Custom hooks
 import { useProvider } from "@/app/hooks/useProvider"
 import { useExchange } from "@/app/hooks/useExchange"
-
-// Config
-import config from "@/app/config.json"
 
 import {
   selectAccount,
@@ -36,12 +34,13 @@ import {
   selectMyFilledOrders,
   selectPriceData,
 } from "@/lib/selectors"
-import { exchange } from "@/lib/features/exchange/exchange"
 
 export default function Home() {
   // Local state
   const [showBuy, setShowBuy] = useState(true)
   const [showMyTransactions, setShowMyTransactions] = useState(false)
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
+  const [orderNotice, setOrderNotice] = useState(null)
 
   // Redux
   const dispatch = useAppDispatch()
@@ -56,14 +55,37 @@ export default function Home() {
   // Order form tab references (Buy or Sell)
   const buyRef = useRef(null)
   const sellRef = useRef(null)
+  const noticeTimerRef = useRef(null)
 
   // Order & Transaction tab references (Trades or Orders)
   const tradeRef = useRef(null)
   const orderRef = useRef(null)
 
   // Hooks
-  const { provider, chainId } = useProvider()
+  const { provider } = useProvider()
   const { exchange } = useExchange()
+
+  function showOrderNotice(type, message, txHash = "") {
+    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+
+    setOrderNotice({ type, message, txHash })
+    noticeTimerRef.current = setTimeout(() => {
+      setOrderNotice(null)
+      noticeTimerRef.current = null
+    }, 5000)
+  }
+
+  function parseOrderErrorMessage(error) {
+    const reason = error?.reason || ""
+    const message = error?.shortMessage || error?.message || ""
+    const combined = `${reason} ${message}`.toLowerCase()
+
+    if (combined.includes("user rejected") || combined.includes("rejected")) {
+      return "Transaction rejected in wallet."
+    }
+
+    return "Order creation failed. Please try again."
+  }
 
   // Data fetching
   async function getAllOrders() {
@@ -115,14 +137,21 @@ export default function Home() {
 
   // Handlers
   async function orderHandler(form) {
+    if (isSubmittingOrder) return
+
     try {
+      setOrderNotice(null)
+      setIsSubmittingOrder(true)
+
       // Get form inputs
       const amount = Number(form.get("amount"))
       const price = Number(form.get("price"))
 
       // Validate inputs
-      if (!Number.isFinite(amount) || amount <= 0) return
-      if (!Number.isFinite(price) || price <= 0) return
+      if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(price) || price <= 0) {
+        showOrderNotice("error", "Please enter a valid amount and price.")
+        return
+      }
 
       // Get signer and format amount
       const signer = await provider.getSigner()
@@ -138,22 +167,37 @@ export default function Home() {
 
     } catch (error) {
       console.log(error)
-      return
+      showOrderNotice("error", parseOrderErrorMessage(error))
+    } finally {
+      setIsSubmittingOrder(false)
     }
   }
 
   async function makeOrder(signer, tokenGet, amountGetWei, tokenGive, amountGiveWei) {
     const transaction = await exchange.connect(signer).makeOrder(tokenGet, amountGetWei, tokenGive, amountGiveWei)
     await transaction.wait()
+    showOrderNotice(
+      "success",
+      `${showBuy ? "Buy" : "Sell"} order confirmed. Updating orderbook...`,
+      transaction.hash
+    )
+
+    // Ensure the UI updates even if a websocket/event callback is delayed or missed.
+    await getAllOrders()
   }
 
   useEffect(() => {
-    if(!(provider && exchange && market)) return
+    return () => {
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!(provider && exchange && market)) return
 
     // Fetch all orders
     getAllOrders()
 
-    // Create event listener to listen for new orders created
     const onOrderCreated = (id, user, tokenGet, amountGet, tokenGive, amountGive, timestamp) => {
       const order = {
         id: Number(id),
@@ -164,11 +208,10 @@ export default function Home() {
         amountGive: amountGive.toString(),
         timestamp: timestamp.toString()
       }
-      
+
       dispatch(addOrder(order))
     }
 
-    // Create event listener to listen for orders cancelled
     const onOrderCancelled = (id, user, tokenGet, amountGet, tokenGive, amountGive, timestamp) => {
       const order = {
         id: Number(id),
@@ -183,18 +226,58 @@ export default function Home() {
       dispatch(addCancelledOrder(order))
     }
 
+    const onOrderFilled = (id, user, tokenGet, amountGet, tokenGive, amountGive, creator, timestamp) => {
+      const order = {
+        id: Number(id),
+        user: user,
+        tokenGet: tokenGet,
+        amountGet: amountGet.toString(),
+        tokenGive: tokenGive,
+        amountGive: amountGive.toString(),
+        creator: creator,
+        timestamp: timestamp.toString()
+      }
+
+      dispatch(addFilledOrder(order))
+    }
+
     exchange.on("OrderCreated", onOrderCreated)
     exchange.on("OrderCancelled", onOrderCancelled)
+    exchange.on("OrderFilled", onOrderFilled)
 
     return () => {
       exchange.off("OrderCreated", onOrderCreated)
       exchange.off("OrderCancelled", onOrderCancelled)
+      exchange.off("OrderFilled", onOrderFilled)
     }
   }, [provider, exchange, market, dispatch])
 
   return (
     <div className="page trading">
       <h1 className="title">Trading</h1>
+
+      {orderNotice && (
+        <div
+          className={`trade-toast trade-toast--${orderNotice.type}`}
+          role={orderNotice.type === "error" ? "alert" : "status"}
+          aria-live={orderNotice.type === "error" ? "assertive" : "polite"}
+        >
+          <div className="trade-toast__content">
+            <p>{orderNotice.message}</p>
+            {orderNotice.txHash && (
+              <code className="trade-toast__hash">Tx: {orderNotice.txHash}</code>
+            )}
+          </div>
+          <button
+            type="button"
+            className="trade-toast__close"
+            onClick={() => setOrderNotice(null)}
+            aria-label="Dismiss notification"
+          >
+            x
+          </button>
+        </div>
+      )}
 
       <section className="insights">
         {market ? (
@@ -238,7 +321,11 @@ export default function Home() {
             </label>
             <input type="number" name="price" id="price" placeholder="0.0000" step="0.0001" />
 
-            <input type="submit" value={`Create ${showBuy ? "Buy" : "Sell"} Order`} />
+            <input
+              type="submit"
+              value={isSubmittingOrder ? `Submitting ${showBuy ? "Buy" : "Sell"}...` : `Create ${showBuy ? "Buy" : "Sell"} Order`}
+              disabled={isSubmittingOrder}
+            />
           </form>
         )}
       </section>
