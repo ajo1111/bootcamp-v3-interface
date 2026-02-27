@@ -9,9 +9,10 @@ import { ethers } from "ethers"
 
 // Redux
 import { useAppDispatch, useAppSelector } from "@/lib/hooks"
-import { setAccount, setBalance } from "@/lib/features/user/user"
+import { setAccount, setBalance, setMode } from "@/lib/features/user/user"
 import {
   selectAccount,
+  selectConnectionMode,
   selectETHBalance,
 } from "@/lib/selectors"
 
@@ -21,9 +22,14 @@ import { useProvider } from "@/app/hooks/useProvider"
 // Import assets
 import network from "@/app/assets/other/network.svg"
 
-// Import config
-import config from "@/app/config.json"
+import { getSupportedChainKey } from "@/lib/network"
+import { activateDemoSession, clearDemoSession, DEMO_CHAIN_KEY } from "@/lib/demo-session"
 
+const HARDHAT_CHAIN_KEY = "31337"
+const HARDHAT_RPC_URL = process.env.NEXT_PUBLIC_HARDHAT_RPC_URL
+const HARDHAT_CHAIN_ID_HEX = toChainIdHex(
+  process.env.NEXT_PUBLIC_HARDHAT_CHAIN_ID || HARDHAT_CHAIN_KEY
+) || "0x7a69"
 const TENDERLY_RPC_URL = process.env.NEXT_PUBLIC_TENDERLY_RPC_URL
 const TENDERLY_CHAIN_ID = process.env.NEXT_PUBLIC_TENDERLY_CHAIN_ID || "4"
 
@@ -50,9 +56,17 @@ const TENDERLY_CHAIN_ID_HEX = toChainIdHex(TENDERLY_CHAIN_ID) || "0x4"
 
 const NETWORK_OPTIONS = [
   {
-    key: "31337",
+    key: HARDHAT_CHAIN_KEY,
     label: "Hardhat",
-    chainIdHex: "0x7a69",
+    chainIdHex: HARDHAT_CHAIN_ID_HEX,
+    addEthereumChainParams: HARDHAT_RPC_URL
+      ? {
+          chainId: HARDHAT_CHAIN_ID_HEX,
+          chainName: "Hardhat",
+          nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+          rpcUrls: [HARDHAT_RPC_URL],
+        }
+      : null,
   },
   {
     key: TENDERLY_CHAIN_ID,
@@ -70,15 +84,6 @@ const NETWORK_OPTIONS = [
   },
 ]
 
-function getChainKey(chainId) {
-  if (!chainId) return null
-
-  const parsedChainId = Number(chainId)
-  if (!Number.isFinite(parsedChainId)) return null
-
-  return String(parsedChainId)
-}
-
 function TopNav() {
 
   const { sdk, provider: metamask, chainId } = useSDK()
@@ -86,24 +91,47 @@ function TopNav() {
 
   const dispatch = useAppDispatch()
   const account = useAppSelector(selectAccount)
+  const connectionMode = useAppSelector(selectConnectionMode)
   const balance = useAppSelector(selectETHBalance)
   const [networkError, setNetworkError] = useState("")
-  const chainKey = getChainKey(chainId)
-  const selectedNetwork = chainKey && config[chainKey] ? chainKey : "0"
+  const isDemoMode = connectionMode === "demo"
+  const chainKey = getSupportedChainKey(chainId)
+  const selectedNetwork = isDemoMode ? (DEMO_CHAIN_KEY || "0") : (chainKey || "0")
 
   async function connectHandler() {
     try {
       await sdk.connectAndSign({ msg: "Sign in to DAPP Exchange" })
       await getAccountInfo()
+      dispatch(setMode("metamask"))
     } catch (error) {
       console.log(error)
     }
   }
 
+  function demoHandler() {
+    setNetworkError("")
+    const didActivate = activateDemoSession(dispatch)
+    if (!didActivate) {
+      setNetworkError("Demo mode is unavailable. Check app/config.json.")
+    }
+  }
+
+  function exitDemoHandler() {
+    setNetworkError("")
+    clearDemoSession(dispatch)
+  }
+
   async function networkHandler(e) {
     setNetworkError("")
-    if (!metamask) {
-      setNetworkError("Wallet provider is not ready.")
+    if (isDemoMode) {
+      setNetworkError("Network switching is disabled in demo mode.")
+      return
+    }
+
+    const walletProvider = metamask || sdk?.getProvider?.()
+
+    if (!walletProvider) {
+      setNetworkError("Connect wallet first to switch network.")
       return
     }
 
@@ -114,7 +142,7 @@ function TopNav() {
     if (!nextNetwork) return
 
     try {
-      await metamask.request({
+      await walletProvider.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: nextNetwork.chainIdHex }],
       })
@@ -125,7 +153,7 @@ function TopNav() {
 
       if (rpcErrorCode === missingNetworkErrorCode && nextNetwork.addEthereumChainParams) {
         try {
-          await metamask.request({
+          await walletProvider.request({
             method: "wallet_addEthereumChain",
             params: [nextNetwork.addEthereumChainParams],
           })
@@ -139,6 +167,8 @@ function TopNav() {
 
       if (nextNetwork.chainIdHex === "0x4") {
         setNetworkError("Chain ID 4 is a MetaMask default chain. Use a custom Tenderly chain ID.")
+      } else if (rpcErrorCode === missingNetworkErrorCode && nextNetwork.key === HARDHAT_CHAIN_KEY) {
+        setNetworkError("Hardhat network not found. Set NEXT_PUBLIC_HARDHAT_RPC_URL so wallet can add it.")
       } else if (rpcErrorCode === userRejectedRequestErrorCode) {
         setNetworkError("Network switch request was rejected in wallet.")
       } else if (rpcErrorCode === missingNetworkErrorCode) {
@@ -168,10 +198,12 @@ function TopNav() {
       metamask.on("accountsChanged", async (accounts) => {
         if (accounts.length === 0) {
           // No accounts are connected
-          setAccount(null)
-          setBalance(0)
+          dispatch(setAccount(null))
+          dispatch(setBalance(0))
+          dispatch(setMode("none"))
         } else {
           await getAccountInfo()
+          dispatch(setMode("metamask"))
         }
       })
 
@@ -184,7 +216,7 @@ function TopNav() {
         metamask.removeAllListeners()
       }
     }
-  }, [sdk, metamask])
+  }, [sdk, metamask, dispatch])
 
   return(
     <nav className="topnav">
@@ -222,19 +254,36 @@ function TopNav() {
         )}
         
         {account ? (
-          <a
-            href={`https://etherscan.io/address/${account}`}
-            target="_blank"
-            rel="noreferrer"
-            className="link"  
-          >
-            {account.slice(0,6) + "..." + account.slice(38, 42)}
-            <Jazzicon diameter={44} seed={account} />
-          </a>
+          isDemoMode ? (
+            <div className="account-actions">
+              <div className="link">
+                {account.slice(0,6) + "..." + account.slice(38, 42)}
+                <span className="demo-badge">Demo</span>
+              </div>
+              <button onClick={exitDemoHandler} className="button button--secondary">
+                Exit
+              </button>
+            </div>
+          ) : (
+            <a
+              href={`https://etherscan.io/address/${account}`}
+              target="_blank"
+              rel="noreferrer"
+              className="link"  
+            >
+              {account.slice(0,6) + "..." + account.slice(38, 42)}
+              <Jazzicon diameter={44} seed={account} />
+            </a>
+          )
         ) : (
-          <button onClick={connectHandler}  className="button">
-            Connect
-          </button>
+          <div className="account-actions">
+            <button onClick={connectHandler} className="button">
+              Connect
+            </button>
+            <button onClick={demoHandler} className="button button--secondary">
+              Demo
+            </button>
+          </div>
         )}
       </div>
     </nav>

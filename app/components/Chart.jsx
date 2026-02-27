@@ -1,8 +1,7 @@
-import dynamic from "next/dynamic"
-import Image from "next/image"
+"use client"
 
-// We need to make sure the chart is loaded only in the client
-const Chart = dynamic(() => import("react-apexcharts", { ssr: false }))
+import { useEffect, useState } from "react"
+import Image from "next/image"
 
 // Dummy data & config
 import { options, series, getSeriesForMarket } from "@/app/data/prices"
@@ -11,10 +10,27 @@ import up from "@/app/assets/arrows/price-up.svg"
 import down from "@/app/assets/arrows/price-down.svg"
 
 function PriceChart({ market, data }) {
+  const [ApexChart, setApexChart] = useState(null)
   const dummySeries = getSeriesForMarket(market) || series
   const dummyData = dummySeries?.[0]?.data || []
   const liveData = data?.series?.[0]?.data || []
   const chartData = liveData.length > 0 ? liveData : dummyData
+
+  useEffect(() => {
+    let mounted = true
+
+    import("react-apexcharts")
+      .then((module) => {
+        if (mounted) setApexChart(() => module.default)
+      })
+      .catch((error) => {
+        console.error("Failed to load chart library", error)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const lastCandle = chartData[chartData.length - 1]
   const prevCandle = chartData[chartData.length - 2]
@@ -64,13 +80,17 @@ function PriceChart({ market, data }) {
         </div>
       </div>
 
-      <Chart
-        options={options}
-        series={[{ data: chartData }]}
-        type="candlestick"
-        width="100%"
-        height="100%"
-      />
+      {ApexChart ? (
+        <ApexChart
+          options={options}
+          series={[{ data: chartData }]}
+          type="candlestick"
+          width="100%"
+          height={320}
+        />
+      ) : (
+        <p className="chart-loading">Loading chart...</p>
+      )}
 
     </div>
   );

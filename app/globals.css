@@ -614,6 +614,115 @@ form input[type="submit"]:hover {
   align-items: center;
 }
 
+.topnav .account .account-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.topnav .account .account-actions .button {
+  width: auto;
+  min-width: 80px;
+  padding: 0 0.85rem;
+}
+
+.topnav .account .button--secondary {
+  color: var(--clr-gray);
+  border-color: var(--clr-gray);
+}
+
+.topnav .account .button--secondary:hover {
+  color: var(--clr-black);
+}
+
+.topnav .account .demo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--clr-orange);
+  color: var(--clr-orange);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.demo-guide {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 40;
+  width: min(360px, 100%);
+  margin: 0.75rem 0 0 auto;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  background: rgba(5, 5, 5, 0.95);
+  backdrop-filter: blur(8px);
+}
+
+.demo-guide h3 {
+  margin: 0;
+  color: var(--clr-orange);
+  font-size: 1rem;
+}
+
+.demo-guide__progress {
+  margin: 0.55rem 0 0;
+  color: var(--clr-gray);
+  font-size: 0.78rem;
+}
+
+.demo-guide__title {
+  margin: 0.6rem 0 0;
+  font-size: 0.95rem;
+  color: var(--clr-white);
+}
+
+.demo-guide__description {
+  margin: 0.35rem 0 0;
+  color: var(--clr-gray);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.demo-guide__hint {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: var(--clr-orange);
+}
+
+.demo-guide__hint a {
+  color: var(--clr-orange);
+}
+
+.demo-guide__actions {
+  margin-top: 0.8rem;
+}
+
+.demo-guide__actions .button {
+  width: 100%;
+  min-width: 0;
+}
+
+.demo-guide__steps {
+  margin: 0.9rem 0 0;
+  padding: 0 0 0 1.1rem;
+  color: var(--clr-gray);
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.demo-guide__steps li.is-current {
+  color: var(--clr-orange);
+}
+
+.demo-guide__steps li.is-done {
+  color: var(--clr-green);
+}
+
 .topnav .account .balance {
   display: none;
 
@@ -781,6 +890,14 @@ form input[type="submit"]:hover {
   grid-column: span 12;
 
   font-weight: 400;
+}
+
+.page .title-note {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--clr-gray);
+  font-size: 0.9rem;
+  font-weight: 300;
 }
 
 .page section {
@@ -974,6 +1091,14 @@ form input[type="submit"]:hover {
   outline: 1px solid var(--clr-orange);
 }
 
+.orderbook table tbody tr.non-interactive {
+  cursor: default;
+}
+
+.orderbook table tbody tr.non-interactive:hover {
+  outline: none;
+}
+
 /* MARKET */
 
 .trading .market {
@@ -1040,6 +1165,13 @@ form input[type="submit"]:hover {
 
 .chart {
   height: 100%;
+  min-height: 320px;
+}
+
+.chart-loading {
+  color: var(--clr-gray);
+  font-size: 0.9rem;
+  padding: 1rem 0;
 }
 
 /* 
@@ -1440,6 +1572,13 @@ form input[type="submit"]:hover {
 
   .page .loans {
     grid-column: 1 / 13;
+  }
+}
+
+@media only screen and (max-width: 767px) {
+  .demo-guide {
+    width: 100%;
+    margin-left: 0;
   }
 }
 

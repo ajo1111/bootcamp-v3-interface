@@ -4,7 +4,8 @@ import { ethers } from "ethers"
 // Redux
 import { useAppDispatch, useAppSelector } from "@/lib/hooks"
 import { setBalance } from "@/lib/features/tokens/tokens"
-import { selectTokenAndBalance } from "@/lib/selectors"
+import { advanceTutorial } from "@/lib/features/demo/demo"
+import { selectConnectionMode, selectTokenAndBalance } from "@/lib/selectors"
 
 // Custom hooks
 import { useProvider } from "@/app/hooks/useProvider"
@@ -18,6 +19,8 @@ function Transfer({ type, tokens }) {
   // Redux State
   const dispatch = useAppDispatch()
   const { token, balances } = useAppSelector(state => selectTokenAndBalance(state, address))
+  const connectionMode = useAppSelector(selectConnectionMode)
+  const isDemoMode = connectionMode === "demo"
 
   // Hooks
   const { provider } = useProvider()
@@ -38,6 +41,44 @@ function Transfer({ type, tokens }) {
       // Validate inputs
       if (!address) throw new Error("Token not selected")
       if (!amount) throw new Error("Amount not set")
+
+      if (isDemoMode) {
+        const parsedAmount = Number(amount)
+        if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+          throw new Error("Amount must be greater than 0")
+        }
+
+        const walletBalance = Number(balances?.wallet || 0)
+        const exchangeBalance = Number(balances?.exchange || 0)
+
+        if (type === "deposit") {
+          if (walletBalance < parsedAmount) {
+            throw new Error("Insufficient wallet balance")
+          }
+
+          dispatch(setBalance({
+            address,
+            wallet: (walletBalance - parsedAmount).toFixed(4),
+            exchange: (exchangeBalance + parsedAmount).toFixed(4)
+          }))
+          dispatch(advanceTutorial("deposit_completed"))
+        }
+
+        if (type === "withdraw") {
+          if (exchangeBalance < parsedAmount) {
+            throw new Error("Insufficient exchange balance")
+          }
+
+          dispatch(setBalance({
+            address,
+            wallet: (walletBalance + parsedAmount).toFixed(4),
+            exchange: (exchangeBalance - parsedAmount).toFixed(4)
+          }))
+          dispatch(advanceTutorial("withdraw_completed"))
+        }
+
+        return
+      }
 
       const signer = await provider.getSigner()
       const amountWei = ethers.parseUnits(amount.toString(), 18)

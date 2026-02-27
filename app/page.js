@@ -20,6 +20,7 @@ import {
   addCancelledOrder,
   addFilledOrder
 } from "@/lib/features/exchange/exchange"
+import { advanceTutorial } from "@/lib/features/demo/demo"
 
 // Custom hooks
 import { useProvider } from "@/app/hooks/useProvider"
@@ -27,6 +28,8 @@ import { useExchange } from "@/app/hooks/useExchange"
 
 import {
   selectAccount,
+  selectAllOrders,
+  selectConnectionMode,
   selectMarket,
   selectOpenOrders,
   selectMyOpenOrders,
@@ -34,6 +37,15 @@ import {
   selectMyFilledOrders,
   selectPriceData,
 } from "@/lib/selectors"
+import { filledOrders as demoFilledOrders, myFilledOrders as demoMyFilledOrders, myOpenOrders as demoMyOpenOrders, openOrders as demoOpenOrders } from "@/app/data/orders"
+import config from "@/app/config.json"
+import { buildMarketFromConfig, getDefaultChainKey } from "@/lib/network"
+
+const DEFAULT_CHAIN_KEY = getDefaultChainKey()
+const DEFAULT_CHAIN_CONFIG = DEFAULT_CHAIN_KEY ? config[DEFAULT_CHAIN_KEY] : null
+const DEMO_MARKET = DEFAULT_CHAIN_CONFIG?.markets?.length
+  ? buildMarketFromConfig(DEFAULT_CHAIN_CONFIG, DEFAULT_CHAIN_CONFIG.markets[0].tokens)
+  : []
 
 export default function Home() {
   // Local state
@@ -45,6 +57,8 @@ export default function Home() {
   // Redux
   const dispatch = useAppDispatch()
   const account = useAppSelector(selectAccount)
+  const connectionMode = useAppSelector(selectConnectionMode)
+  const allOrders = useAppSelector(selectAllOrders)
   const market = useAppSelector(selectMarket)
   const openOrders = useAppSelector(selectOpenOrders)
   const myOpenOrders = useAppSelector(selectMyOpenOrders)
@@ -64,6 +78,17 @@ export default function Home() {
   // Hooks
   const { provider } = useProvider()
   const { exchange } = useExchange()
+  const isDemoMode = connectionMode === "demo"
+  const hasLiveMarket = Array.isArray(market) && market.length > 1
+  const marketToDisplay = hasLiveMarket ? market : DEMO_MARKET
+  const hasMarket = Array.isArray(marketToDisplay) && marketToDisplay.length > 1
+  const hasLiveData = Boolean(account && provider && exchange && hasLiveMarket)
+  const hasInteractiveTrading = hasLiveData || isDemoMode
+  const useReduxOrderData = hasLiveData || isDemoMode
+  const openOrdersToDisplay = useReduxOrderData ? openOrders : demoOpenOrders
+  const myOpenOrdersToDisplay = useReduxOrderData ? myOpenOrders : demoMyOpenOrders
+  const filledOrdersToDisplay = useReduxOrderData ? filledOrders : demoFilledOrders
+  const myFilledOrdersToDisplay = useReduxOrderData ? myFilledOrders : demoMyFilledOrders
 
   function showOrderNotice(type, message, txHash = "") {
     if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
@@ -153,6 +178,33 @@ export default function Home() {
         return
       }
 
+      if (isDemoMode) {
+        const lastOrderId = allOrders.reduce((maxOrderId, order) => {
+          if (!order?.id) return maxOrderId
+          return Math.max(maxOrderId, Number(order.id))
+        }, 0)
+        const nextOrderId = lastOrderId + 1
+
+        const [baseToken, quoteToken] = marketToDisplay
+        const amountGet = amount
+        const amountGive = amount * price
+
+        const order = {
+          id: nextOrderId,
+          user: account,
+          tokenGet: showBuy ? baseToken.address : quoteToken.address,
+          amountGet: ethers.parseUnits(String(amountGet), 18).toString(),
+          tokenGive: showBuy ? quoteToken.address : baseToken.address,
+          amountGive: ethers.parseUnits(String(amountGive), 18).toString(),
+          timestamp: String(Math.floor(Date.now() / 1000))
+        }
+
+        dispatch(addOrder(order))
+        dispatch(advanceTutorial("order_created"))
+        showOrderNotice("success", `Demo ${showBuy ? "buy" : "sell"} order added to orderbook.`)
+        return
+      }
+
       // Get signer and format amount
       const signer = await provider.getSigner()
       const amountGetWei = ethers.parseUnits(String(amount), 18)
@@ -193,6 +245,7 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
+    if (isDemoMode) return
     if (!(provider && exchange && market)) return
 
     // Fetch all orders
@@ -250,11 +303,20 @@ export default function Home() {
       exchange.off("OrderCancelled", onOrderCancelled)
       exchange.off("OrderFilled", onOrderFilled)
     }
-  }, [provider, exchange, market, dispatch])
+  }, [provider, exchange, market, dispatch, isDemoMode])
 
   return (
     <div className="page trading">
-      <h1 className="title">Trading</h1>
+      <h1 className="title">
+        Trading
+        {!hasLiveData && (
+          <span className="title-note">
+            {isDemoMode
+              ? "Demo mode active: orders, trades, and wallet actions are simulated."
+              : "Preview mode: connect wallet or tap Demo to enable interactions."}
+          </span>
+        )}
+      </h1>
 
       {orderNotice && (
         <div
@@ -280,8 +342,8 @@ export default function Home() {
       )}
 
       <section className="insights">
-        {market ? (
-          <Chart market={market} data={priceData} />
+        {hasMarket ? (
+          <Chart market={marketToDisplay} data={priceData} />
         ) : (
           <p className="center">Please Select Market</p>
         )}
@@ -307,7 +369,7 @@ export default function Home() {
 
         {!account ? (
           <p className="center">Please Connect Wallet</p>          
-        ) : !exchange ? (
+        ) : !exchange && !isDemoMode ? (
           <p className="center">Exchange Not Deployed</p>          
         ) : (
           <form action={orderHandler}>
@@ -332,13 +394,23 @@ export default function Home() {
 
       <section className="orderbook">
         <h2>Orderbook</h2>
-        {market ? (
+        {hasMarket ? (
           <>
             {/* SELLING */}
-            <Book caption={"Selling"} market={market} orders={openOrders.sellOrders}/>
+            <Book
+              caption={"Selling"}
+              market={marketToDisplay}
+              orders={openOrdersToDisplay.sellOrders}
+              interactive={hasInteractiveTrading}
+            />
 
             {/* BUYING */}
-            <Book caption={"Buying"} market={market} orders={openOrders.buyOrders}/>
+            <Book
+              caption={"Buying"}
+              market={marketToDisplay}
+              orders={openOrdersToDisplay.buyOrders}
+              interactive={hasInteractiveTrading}
+            />
           </>
         ) : (
           <p className="center">Please Select Market</p>
@@ -357,9 +429,9 @@ export default function Home() {
         />
 
         <Orders
-          market={market}
-          orders={showMyTransactions ? myFilledOrders : myOpenOrders}
-          type={showMyTransactions ? "filled" : "open"}
+          market={marketToDisplay}
+          orders={showMyTransactions ? myFilledOrdersToDisplay : myOpenOrdersToDisplay}
+          type={showMyTransactions ? "filled" : hasInteractiveTrading ? "open" : undefined}
         />
       </section>
 
@@ -367,8 +439,8 @@ export default function Home() {
         <h2>Trades</h2>
 
         <Orders
-          market={market}
-          orders={filledOrders}
+          market={marketToDisplay}
+          orders={filledOrdersToDisplay}
         />
       </section>
 

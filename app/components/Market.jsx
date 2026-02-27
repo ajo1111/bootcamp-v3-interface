@@ -1,14 +1,17 @@
 import { useEffect } from "react"
 
 // Redux
-import { useAppDispatch } from "@/lib/hooks"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
 import { setMarket } from "@/lib/features/exchange/exchange"
+import { advanceTutorial } from "@/lib/features/demo/demo"
 
 import config from "@/app/config.json"
+import { buildMarketFromConfig, getActiveChainKey } from "@/lib/network"
 
 // Custom hooks
 import { useProvider } from "@/app/hooks/useProvider"
 import { useTokens } from "@/app/hooks/useTokens"
+import { selectConnectionMode } from "@/lib/selectors"
 
 function Market() {
   // Redux
@@ -17,44 +20,61 @@ function Market() {
   // Hooks
   const { chainId } = useProvider()
   const { tokens } = useTokens()
+  const connectionMode = useAppSelector(selectConnectionMode)
+  const isDemoMode = connectionMode === "demo"
+  const activeChainKey = getActiveChainKey(chainId)
+  const chainConfig = activeChainKey ? config[activeChainKey] : null
 
   // Handlers
-  async function marketHandler(addresses) {
+  async function marketHandler(addresses, isUserAction = false) {
+    if (!chainConfig || !Array.isArray(addresses) || addresses.length < 2) return
 
-    const promises = await addresses.map(async (address) => {
-      const symbol = await tokens[address].symbol()
-      return { address, symbol}
+    const defaultMarket = buildMarketFromConfig(chainConfig, addresses)
+
+    const promises = defaultMarket.map(async (marketToken) => {
+      const tokenContract = tokens?.[marketToken.address]
+      if (!tokenContract) return marketToken
+
+      try {
+        const symbol = await tokenContract.symbol()
+        return { ...marketToken, symbol }
+      } catch {
+        return marketToken
+      }
     })
 
     const market = await Promise.all(promises)
 
     dispatch(setMarket(market))
+    if (isDemoMode && isUserAction) {
+      dispatch(advanceTutorial("market_selected"))
+    }
   }
 
   useEffect(() => {
-    if (config[Number(chainId)] && tokens) {
-      marketHandler(config[Number(chainId)].markets[0].tokens)
+    if (chainConfig?.markets?.length > 0) {
+      marketHandler(chainConfig.markets[0].tokens)
     }
-  }, [config, tokens])
+  }, [dispatch, activeChainKey, tokens])
 
   return (
     <div className="select">
-      {config[Number(chainId)] && (
+      {chainConfig && (
         <select
         name="market"
         id="market"
         defaultValue={
-          config[Number(chainId)].markets.length > 0 ?
-            `${config[Number(chainId)].markets[0].tokens[0]},${config[Number(chainId)].markets[0].tokens[1]}` :
+          chainConfig.markets.length > 0 ?
+            `${chainConfig.markets[0].tokens[0]},${chainConfig.markets[0].tokens[1]}` :
             0
         }
-        onChange={(e) => marketHandler(e.target.value.split(","))}
+        onChange={(e) => marketHandler(e.target.value.split(","), true)}
       >
         <option value="0" disabled>
-          {config[Number(chainId)].markets.length > 0 ? "Select Market" : "No Markets Available"}
+          {chainConfig.markets.length > 0 ? "Select Market" : "No Markets Available"}
         </option>
 
-        {config[Number(chainId)].markets.map((market, index) => (
+        {chainConfig.markets.map((market, index) => (
           <option
             key={index}
             value={`${market.tokens[0]},${market.tokens[1]}`}

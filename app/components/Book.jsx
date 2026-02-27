@@ -5,7 +5,7 @@ import { ethers } from "ethers"
 import { useAppDispatch } from "@/lib/hooks"
 import { setOrderToFill } from "@/lib/features/exchange/exchange"
 
-function Book({ caption, market, orders }) {
+function Book({ caption, market, orders, interactive = true }) {
   const router = useRouter()
 
   // Redux
@@ -31,13 +31,20 @@ function Book({ caption, market, orders }) {
         </thead>
         <tbody>
           {orders.map((order, index) => (
-            <tr
-              key={index}
-              onClick={() => fillHandler(order)}
-              role="link"
-              tabIndex={0}
-              aria-label="Fill Order"
-            >
+              <tr
+                key={index}
+                onClick={interactive ? () => fillHandler(order) : undefined}
+                onKeyDown={interactive ? (e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    fillHandler(order)
+                  }
+                } : undefined}
+                role={interactive ? "link" : undefined}
+                tabIndex={interactive ? 0 : -1}
+                aria-label={interactive ? "Fill Order" : undefined}
+                className={interactive ? undefined : "non-interactive"}
+              >
               <td className={caption === "Selling" ? "gray" : undefined}>
                 {ethers.formatUnits(order.amountGet, 18)}
               </td>

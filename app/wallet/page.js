@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks"
 import { setToken, setBalance } from "@/lib/features/tokens/tokens"
 import {
   selectAccount,
+  selectConnectionMode,
   selectTokens,
   selectWalletBalances,
   selectExchangeBalances,
@@ -25,9 +26,11 @@ export default function Home() {
   // Redux
   const dispatch = useAppDispatch()
   const account = useAppSelector(selectAccount)
+  const connectionMode = useAppSelector(selectConnectionMode)
   const tokens = useAppSelector(selectTokens)
   const walletBalances = useAppSelector(selectWalletBalances)
   const exchangeBalances = useAppSelector(selectExchangeBalances)
+  const isDemoMode = connectionMode === "demo"
 
   // Hooks
   const { tokens: tokenContracts } = useTokens()
@@ -60,15 +63,27 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if(account && tokenContracts && exchange) {
+    if (!isDemoMode && account && tokenContracts && exchange) {
       getBalances()
     }
-  }, [account, tokenContracts, exchange])
+  }, [account, tokenContracts, exchange, isDemoMode])
 
   return (
     <div className="page wallet">
 
-      <h1 className="title">Wallet</h1>
+      <h1 className="title">
+        Wallet
+        {!account && (
+          <span className="title-note">
+            Connect wallet or tap Demo to start simulated transfers and balances.
+          </span>
+        )}
+        {account && isDemoMode && (
+          <span className="title-note">
+            Demo mode active: deposits and withdrawals are simulated locally.
+          </span>
+        )}
+      </h1>
 
       <section>
         <h2>Wallet Funds</h2>

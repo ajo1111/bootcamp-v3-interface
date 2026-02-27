@@ -1,15 +1,40 @@
 import { ethers } from "ethers"
 
+// Redux
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { addCancelledOrder } from "@/lib/features/exchange/exchange"
+import { advanceTutorial } from "@/lib/features/demo/demo"
+import { selectAccount, selectConnectionMode } from "@/lib/selectors"
+
 // Custom hooks
 import { useProvider } from "@/app/hooks/useProvider"
 import { useExchange } from "@/app/hooks/useExchange"
 
 function Orders({ market, orders, type }) {
+  const dispatch = useAppDispatch()
+  const account = useAppSelector(selectAccount)
+  const connectionMode = useAppSelector(selectConnectionMode)
+  const isDemoMode = connectionMode === "demo"
+
   // Hooks
   const { provider } = useProvider()
   const { exchange } = useExchange()
 
   async function cancelHandler(order) {
+    if (isDemoMode && order?.id) {
+      dispatch(addCancelledOrder({
+        id: Number(order.id),
+        user: account || order.user,
+        tokenGet: order.tokenGet,
+        amountGet: order.amountGet?.toString?.() || String(order.amountGet),
+        tokenGive: order.tokenGive,
+        amountGive: order.amountGive?.toString?.() || String(order.amountGive),
+        timestamp: String(Math.floor(Date.now() / 1000))
+      }))
+      dispatch(advanceTutorial("order_cancelled"))
+      return
+    }
+
     if (!(provider && exchange && order?.id)) return
 
     try {

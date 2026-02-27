@@ -15,8 +15,9 @@ import mask from "@/app/assets/mask.svg"
 
 // Redux
 import { useAppDispatch, useAppSelector } from "@/lib/hooks"
-import { setOrderToFill } from "@/lib/features/exchange/exchange"
-import { selectMarket, selectOrderToFill, selectPriceData } from "@/lib/selectors"
+import { addFilledOrder, setOrderToFill } from "@/lib/features/exchange/exchange"
+import { advanceTutorial } from "@/lib/features/demo/demo"
+import { selectAccount, selectConnectionMode, selectMarket, selectOrderToFill, selectPriceData } from "@/lib/selectors"
 
 // Custom hooks
 import { useProvider } from "../hooks/useProvider"
@@ -35,6 +36,9 @@ export default function Home() {
   const market = useAppSelector(selectMarket)
   const order = useAppSelector(selectOrderToFill)
   const priceData = useAppSelector(selectPriceData)
+  const account = useAppSelector(selectAccount)
+  const connectionMode = useAppSelector(selectConnectionMode)
+  const isDemoMode = connectionMode === "demo"
 
   // Hooks
   const router = useRouter()
@@ -68,6 +72,31 @@ export default function Home() {
       setTxHash("")
       setIsSubmitting(true)
 
+      if (isDemoMode) {
+        const demoHash = `0xdemo${Date.now().toString(16)}`
+
+        dispatch(addFilledOrder({
+          id: Number(order.id),
+          user: account,
+          tokenGet: order.tokenGet,
+          amountGet: order.amountGet?.toString?.() || String(order.amountGet),
+          tokenGive: order.tokenGive,
+          amountGive: order.amountGive?.toString?.() || String(order.amountGive),
+          creator: order.user || account,
+          timestamp: String(Math.floor(Date.now() / 1000))
+        }))
+        dispatch(advanceTutorial("order_filled"))
+
+        dispatch(setOrderToFill(null))
+        setTxHash(demoHash)
+        setSuccessMessage("Demo swap filled successfully. Redirecting to wallet...")
+
+        setTimeout(() => {
+          router.push("/wallet")
+        }, 800)
+        return
+      }
+
       // Get signer
       const signer = await provider.getSigner()
 
@@ -92,6 +121,11 @@ export default function Home() {
   }
 
   async function estimateFees() {
+    if (isDemoMode) {
+      setGasFee(ethers.parseUnits("0.00042", 18))
+      return
+    }
+
     try {
       setErrorMessage("")
 
@@ -106,10 +140,10 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (provider && exchange && order) {
+    if (order && (isDemoMode || (provider && exchange))) {
       estimateFees()
     }
-  }, [provider, exchange, order])
+  }, [provider, exchange, order, isDemoMode])
 
   return (
     <div className="page swapping">
